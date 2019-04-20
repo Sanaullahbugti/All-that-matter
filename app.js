@@ -1,52 +1,90 @@
 const request = require("request");
-const chalk =require('chalk')
+const chalk = require("chalk");
 const query = "karachi";
-const api_key ="1a34b5f5f9e1449cb031e024acfb905f";
-const country ="au";
+const getNews = () =>{
+      request(
+      `https://newsapi.org/v2/top-headlines?country=${country}&apiKey=${api_key}`,
+      (req, res) => {
+        const pars = JSON.parse(res.body);
+        let counter = 0;
+        pars.articles.map(rec => {
+          counter = counter + 1;
+          if (counter <= 5) {
+            console.log(chalk.bgGreen("Title:", rec.title));
+            console.log(chalk.green("Descritption:", rec.description));
+          }
+        });
+      }
+    );
+}
 
-request(`https://newsapi.org/v2/top-headlines?country=${country}&apiKey=${api_key}`,(req,res)=>{
-    const pars = JSON.parse(res.body);
-    pars.articles.map(rec=>{
-        console.log(rec.content)
-    })
-})
 
 
 
-
-// const api_key ="pk.eyJ1Ijoic2J1Z3RpIiwiYSI6ImNqdWZiNGdyaTA4aTU0NG5xaWY3MzUzaWcifQ.sCo8wP6DYbJ1kXuFQhYJVA";
-// request(`https://api.mapbox.com/geocoding/v5/mapbox.places/Los%20${query}.json?access_token=${api_key}`,(req,res)=>{
-// //console.log(res.body);
-// const pars=JSON.parse(res.body);
-// pars.features.map((rec)=>{
-//         console.log(rec.place_name);
-//     });
-// })
-// const api_key="Ue0yzPWkft3tKdGF4GL6FQGd1wxNd1Db";
-// request(`http://api.accuweather.com/locations/v1/search?q=${query}&apikey=${api_key}`,(req,res)=>{
-//     console.log("res:",res);
-
-// })
-
-// const options = {
-//   url: "http://dataservice.accuweather.com/locations/v1/topcities/{150}",
-
-//   apikey: "Ue0yzPWkft3tKdGF4GL6FQGd1wxNd1Db",
-//   language: "en-us",
-//   details: "true"
-// };
-// request(
-//   "http://dataservice.accuweather.com/locations/v1/topcities/150?apikey=Ue0yzPWkft3tKdGF4GL6FQGd1wxNd1Db&language=en-us&details=true",
-//   (req, res) => {
-//     const data = res;
-//     console.log(chalk.bgGreen("data:"),data)
-    //     data.map((rec)=>{
-    //       console.log("rec",rec);
-    //   });
-    // res.SupplementalAdminAreas.toJSON().map((rec)=>{
-    //     console.log("names :"  , rec.localizeName)
-    // });
-   
-//   }
-
-// );
+const weather_api_key = "Ue0yzPWkft3tKdGF4GL6FQGd1wxNd1Db";
+process.argv[2]
+  ?request(`http://dataservice.accuweather.com/locations/v1/cities/autocomplete?apikey=${weather_api_key}&q=${process.argv[2]}`,(req,res)=>{
+    let parsedData = JSON.parse(res.body);
+    console.log(
+      chalk.bgYellow.black(parsedData[0].LocalizedName) +
+        "\t" +
+        chalk.bgCyan(parsedData[0].AdministrativeArea.LocalizedName) +
+        "\t" +
+        chalk.whiteBright(parsedData[0].Country.LocalizedName)
+    );
+    request(
+      `http://dataservice.accuweather.com/currentconditions/v1/${
+        parsedData[0].Key
+      }?apikey=Ue0yzPWkft3tKdGF4GL6FQGd1wxNd1Db`,
+      (req, res) => {
+        let arr = JSON.parse(res.body);
+        console.log();
+        console.log(
+          chalk.greenBright(
+            chalk.bgYellow.black(
+              arr[0].Temperature.Metric.Value +
+                " " +
+                arr[0].Temperature.Metric.Unit
+            )
+          )
+        );
+      }
+    );
+  })
+  : request("https://json.geoiplookup.io/", (req, res) => {
+      let parsedData = JSON.parse(res.body);
+      request(
+        `http://dataservice.accuweather.com/locations/v1/cities/ipaddress?apikey=${weather_api_key}&q=${
+          parsedData.ip
+        }&language=en-us&details=true`,
+        (req, res) => {
+          let parsed = JSON.parse(res.body);
+          console.log(
+            chalk.bgYellow.black(parsed.LocalizedName) +
+              "\t" +
+              chalk.bgCyan(parsed.AdministrativeArea.LocalizedName) +
+              "\t" +
+              chalk.whiteBright(parsed.Country.LocalizedName)
+          );
+          request(
+            `http://dataservice.accuweather.com/currentconditions/v1/${
+              parsed.Key
+            }?apikey=Ue0yzPWkft3tKdGF4GL6FQGd1wxNd1Db`,
+            (req, res) => {
+              let arr = JSON.parse(res.body);
+              console.log();
+              console.log();
+              console.log(
+                chalk.greenBright(
+                  chalk.bgYellow.black(
+                    arr[0].Temperature.Metric.Value +
+                      " " +
+                      arr[0].Temperature.Metric.Unit
+                  )
+                )
+              );
+            }
+          );
+        }
+      );
+    });
